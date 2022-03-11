@@ -9,16 +9,22 @@ filename2d = "map2d.txt"
 filename3d = "map3d.txt"
 picX, picY = 512, 512
 
-# region file and array init
-#if os.path.isfile(filename2d): #check existing 2dmap file
-#    pic = np.genfromtxt(filename2d,dtype=np.uint8)
-#else:
-pic = np.zeros((picY, picX, 3), dtype=np.uint8)
+#cylinder 200 0 0 200 200 0 20 100
+#cone 200 0 200 300 300 0 50 500
+#sphere 200 200 200 100 100 100 75
+#prism 100 100 100 20 20 1 50 20 1 100 40 1 80 120 1 20 80 1    50
 
-#if os.path.isfile(filename3d):
-#    zpic = np.genfromtxt(filename3d) #check existing 3dmap file
-#else:
-zpic = np.zeros((picY, picX), dtype=int)
+
+#region file and array init
+if os.path.isfile(filename2d): #check existing 2dmap file
+    pic = np.genfromtxt(filename2d,  dtype=np.uint8).reshape((picY, picX, 3))
+else:
+    pic = np.zeros((picY, picX, 3), dtype=np.uint8)
+
+if os.path.isfile(filename3d):
+    zpic = np.genfromtxt(filename3d, dtype=int).reshape((picY, picX)) #check existing 3dmap file
+else:
+    zpic = np.zeros((picY, picX), dtype=int)
 
 if not os.path.isfile(cmdfile): #check existing of cmdfile
     sys.quit()
@@ -83,7 +89,87 @@ def Draw_sphere(arr):
                 pic[y][x] = clr
                 zpic[y][x] = int(m.sqrt(R**2 - (x - c_point[0]) ** 2 - (y - c_point[1]) ** 2))
 
+def Draw_contour(contour, clr):
+    clr.reverse()
+    for a in contour:
+        pic[a[1]][a[0]]=clr
 
+#def Narow_contour(contour):
+#    x_ax = [x for x, _ in contour]
+#    y_ax = [y for _, y in contour]
+#    center=[sum(x_ax)/len(x_ax), sum(y_ax)/len(x_ax)]
+#    arr=contour.copy()
+#
+#    arr.sort(key=lambda arr: arr[0])
+#    print(arr)
+
+def Draw_plane(contour, clr, h):
+    clr.reverse()
+    x_ax = [x for x, _ in contour]
+    y_ax = [y for _, y in contour]
+    arr1=[]
+    for i in x_ax:
+        if(i not in arr1): arr1.append(i)
+    x_ax=arr1
+
+    arr1 = []
+    for i in y_ax:
+        if (i not in arr1): arr1.append(i)
+    y_ax = arr1
+
+    out=[]
+    for X in x_ax[1:-1]:
+        size=[0, picY]
+        for p in contour:
+            if(p[0]==X):
+                size=[max(size[0], p[1]), min(size[1], p[1])]
+        for Y in range(size[1], size[0]+1):
+            if (pic[Y][X][0] == clr[0] and pic[Y][X][1] == clr[1] and pic[Y][X][2] == clr[2]): continue
+            pic[Y][X] = clr
+            zpic[Y][X] = h
+
+    for Y in y_ax[1:-1]:
+        size=[0,picX]
+        for p in contour:
+            if(p[1]==Y):
+                size=[max(size[0], p[0]), min(size[1], p[0])]
+        for X in range(size[1], size[0]+1):
+            if (pic[Y][X][0] == clr[0] and pic[Y][X][1] == clr[1] and pic[Y][X][2] == clr[2]): continue
+            pic[Y][X] = clr
+            zpic[Y][X] = h
+
+
+def Create_contour(points):
+    contour = []
+    for i in range(len(points)):
+        A = points[i]
+        if (i == len(points) - 1):
+            B = points[0]
+        else:
+            B = points[i + 1]
+
+        if (A[0] >= B[0]): A, B = B, A
+        k = (B[1] - A[1]) / ((B[0] - A[0]) if (B[0] - A[0]) != 0 else 1)
+        for j in range(B[0] - A[0]):
+            p1 = [A[0] + j, int(A[1] + j * k)]
+            if (p1 not in contour): contour.append([A[0] + j, int(A[1] + j * k)])
+
+        if (A[1] >= B[1]): A, B = B, A
+        k = (B[0] - A[0]) / ((B[1] - A[1]) if (B[1] - A[1]) != 0 else 1)
+        for j in range(B[1] - A[1]):
+            p1 = [int(A[0] + j * k), A[1] + j]
+            if (p1 not in contour): contour.append([int(A[0] + j * k), A[1] + j])
+    return contour
+
+def Draw_prism(arr):
+    clr = arr[1:4]
+    clr.reverse()
+    points=[]
+    for i in range(4, len(arr)-1, 3):
+        points.append([arr[i],arr[i+1],arr[i+2]])
+    H=arr[-1]
+    #y=kx + l
+    Draw_plane(Create_contour(points), clr, arr[-1])
 
 #endregion
 
@@ -91,15 +177,18 @@ def Draw_sphere(arr):
 f = open(cmdfile)
 
 for s in f:
+    s=s[:-1]
     if(s==""): continue
     arr=list(s.split(" "))
+    arr1=[arr[0]]
+    for i in range(1,len(arr)):
+        if(arr[i]!=""): arr1.append(int(arr[i]))
+    arr=arr1
     print(arr)
-    for i in range(1,len(arr)): arr[i]=int(arr[i])
 
     if arr[0]=="cylinder":
-        print("step1")
         Draw_cylinder(arr)
-        print("step2")
+
     elif arr[0]=="cone":
         Draw_cone(arr)
 
@@ -110,15 +199,15 @@ for s in f:
         print("pyramid generation")
 
     elif arr[0] == "prism":
-        print("prism generation")
+        Draw_prism(arr)
 
     elif arr[0] == "2dpic":
-        print("2dpic visualise")
+        cv2.imwrite(imgfile, pic)
 
     elif arr[0] == "3dpic":
         print("3dpic visualise")
 #endregion
-cv2.imwrite(imgfile, pic)
+
 #region save_data
 def save2files():
     f1 = open(filename2d, "w")
