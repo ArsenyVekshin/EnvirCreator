@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import os.path
 import math as m
-#import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import time as t
 import threading
@@ -67,6 +66,7 @@ def Draw_circle(clr, c_point, R):
         for x in range(x_min, x_max):
             if(((x-c_point[0])**2 + (y-c_point[1])**2) <= R**2):
                 if(pic[y][x][0]==clr[0] and pic[y][x][1]==clr[1] and pic[y][x][2]==clr[2]): continue
+                if(zpic[y][x] > int(c_point[2])): continue
                 pic[y][x]=clr
                 zpic[y][x]=int(c_point[2])
 
@@ -112,8 +112,10 @@ def Draw_sphere(arr):
     for y in range(y_min, y_max):
         for x in range(x_min, x_max):
             if (((x - c_point[0]) ** 2 + (y - c_point[1]) ** 2) <= R**2):
+                _z=int(m.sqrt(R**2 - (x - c_point[0]) ** 2 - (y - c_point[1]) ** 2))
+                if (zpic[y][x] > _z): continue
                 pic[y][x] = clr
-                zpic[y][x] = int(m.sqrt(R**2 - (x - c_point[0]) ** 2 - (y - c_point[1]) ** 2))
+                zpic[y][x] = _z
 
 def Draw_contour(contour, clr):
     clr.reverse()
@@ -121,7 +123,6 @@ def Draw_contour(contour, clr):
         pic[a[1]][a[0]]=clr
 
 def Draw_plane(contour, clr, h):
-    clr.reverse()
     x_ax = [x for x, _ in contour]
     y_ax = [y for _, y in contour]
     arr1=[]
@@ -142,6 +143,7 @@ def Draw_plane(contour, clr, h):
                 size=[max(size[0], p[1]), min(size[1], p[1])]
         for Y in range(size[1], size[0]+1):
             if (pic[Y][X][0] == clr[0] and pic[Y][X][1] == clr[1] and pic[Y][X][2] == clr[2]): continue
+            if (zpic[Y][X] > h): continue
             pic[Y][X] = clr
             zpic[Y][X] = h
 
@@ -152,6 +154,7 @@ def Draw_plane(contour, clr, h):
                 size=[max(size[0], p[0]), min(size[1], p[0])]
         for X in range(size[1], size[0]+1):
             if (pic[Y][X][0] == clr[0] and pic[Y][X][1] == clr[1] and pic[Y][X][2] == clr[2]): continue
+            if (zpic[Y][X] > h): continue
             pic[Y][X] = clr
             zpic[Y][X] = h
 
@@ -168,14 +171,6 @@ def Draw_prism(arr):
 #endregion
 
 #region visualise functions init
-#def view3d():
-#    fig = go.Figure(data=[go.Mesh3d(x=picX,
-#                                    y=picY,
-#                                    z=800,
-#                                    opacity=0.5,
-#                                    color='rgba(244,22,100,0.6)'
-#                                    )])
-
 def view3d():
     t1=t.time()
     fig = plt.figure()
@@ -190,7 +185,7 @@ def view3d():
             c[0][y*picX + x] = x
             c[1][y * picX + x] = y
             c[2][y * picX + x] = zpic[y][x]
-            clr[y * picX + x] =[pic[y][x][0]/255, pic[y][x][1]/255, pic[y][x][2]/255, 1]
+            clr[y * picX + x] =[pic[y][x][2]/255, pic[y][x][1]/255, pic[y][x][0]/255, 1]
             #ax.scatter3D(x,y,zpic[y][x])
             #ax.scatter(x,y,zpic[y][x])
     print("point2: ok")
