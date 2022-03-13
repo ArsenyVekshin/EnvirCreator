@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 import os.path
 import math as m
+#import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-#import plotly as plt
 import time as t
 import threading
 
@@ -168,27 +168,39 @@ def Draw_prism(arr):
 #endregion
 
 #region visualise functions init
+#def view3d():
+#    fig = go.Figure(data=[go.Mesh3d(x=picX,
+#                                    y=picY,
+#                                    z=800,
+#                                    opacity=0.5,
+#                                    color='rgba(244,22,100,0.6)'
+#                                    )])
+
 def view3d():
     t1=t.time()
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     print("point1: ok")
     c=np.zeros((3, picX*picY), dtype=int)
+    clr=np.zeros((picX*picY, 4), dtype=float)
 
     for y in range(picY):
         #print(y)
-        t1 = t.time()
         for x in range(picX):
-            c[0][y*picX + x]=x
+            c[0][y*picX + x] = x
+            c[1][y * picX + x] = y
+            c[2][y * picX + x] = zpic[y][x]
+            clr[y * picX + x] =[pic[y][x][0]/255, pic[y][x][1]/255, pic[y][x][2]/255, 1]
             #ax.scatter3D(x,y,zpic[y][x])
             #ax.scatter(x,y,zpic[y][x])
-        print(y, " : ",t.time()-t1)
     print("point2: ok")
-
-    print("3d generation time: ", t.time()-t1)
+    print("3d gen time1: ", t.time() - t1)
+    t1 = t.time()
+    ax.scatter3D(c[0], c[1], c[2],edgecolors=clr)
+    print("3d gen time2: ", t.time() - t1)
     t1=t.time()
-    #fig.show()
-    fig.savefig("fig1.png")
+    fig.show()
+    #fig.savefig("fig1.png")
     print("3d save time: ", t.time() - t1)
 #endregion
 
@@ -225,6 +237,7 @@ for s in f:
 
     elif arr[0] == "3dpic":
         view3d()
+
 #endregion
 
 #region save_data
