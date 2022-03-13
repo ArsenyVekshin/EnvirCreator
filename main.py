@@ -2,6 +2,10 @@ import numpy as np
 import cv2
 import os.path
 import math as m
+#import matplotlib.pyplot as plt
+import plotly as plt
+import time as t
+import threading
 
 cmdfile = "config.txt"
 imgfile = "view2d.jpg"
@@ -33,7 +37,29 @@ print("prev: ok")
 # endregion
 
 #region generation functions init
-def Draw_circle(clr, c_point, R, flag=0):
+def Create_contour(points):
+    contour = []
+    for i in range(len(points)):
+        A = points[i]
+        if (i == len(points) - 1):
+            B = points[0]
+        else:
+            B = points[i + 1]
+
+        if (A[0] >= B[0]): A, B = B, A
+        k = (B[1] - A[1]) / ((B[0] - A[0]) if (B[0] - A[0]) != 0 else 1)
+        for j in range(B[0] - A[0]):
+            p1 = [A[0] + j, int(A[1] + j * k)]
+            if (p1 not in contour): contour.append([A[0] + j, int(A[1] + j * k)])
+
+        if (A[1] >= B[1]): A, B = B, A
+        k = (B[0] - A[0]) / ((B[1] - A[1]) if (B[1] - A[1]) != 0 else 1)
+        for j in range(B[1] - A[1]):
+            p1 = [int(A[0] + j * k), A[1] + j]
+            if (p1 not in contour): contour.append([int(A[0] + j * k), A[1] + j])
+    return contour
+
+def Draw_circle(clr, c_point, R):
     x_min, x_max = c_point[0]-R, c_point[0]+1 + R
     y_min, y_max = c_point[1]-R, c_point[1]+1 + R
 
@@ -94,15 +120,6 @@ def Draw_contour(contour, clr):
     for a in contour:
         pic[a[1]][a[0]]=clr
 
-#def Narow_contour(contour):
-#    x_ax = [x for x, _ in contour]
-#    y_ax = [y for _, y in contour]
-#    center=[sum(x_ax)/len(x_ax), sum(y_ax)/len(x_ax)]
-#    arr=contour.copy()
-#
-#    arr.sort(key=lambda arr: arr[0])
-#    print(arr)
-
 def Draw_plane(contour, clr, h):
     clr.reverse()
     x_ax = [x for x, _ in contour]
@@ -138,29 +155,6 @@ def Draw_plane(contour, clr, h):
             pic[Y][X] = clr
             zpic[Y][X] = h
 
-
-def Create_contour(points):
-    contour = []
-    for i in range(len(points)):
-        A = points[i]
-        if (i == len(points) - 1):
-            B = points[0]
-        else:
-            B = points[i + 1]
-
-        if (A[0] >= B[0]): A, B = B, A
-        k = (B[1] - A[1]) / ((B[0] - A[0]) if (B[0] - A[0]) != 0 else 1)
-        for j in range(B[0] - A[0]):
-            p1 = [A[0] + j, int(A[1] + j * k)]
-            if (p1 not in contour): contour.append([A[0] + j, int(A[1] + j * k)])
-
-        if (A[1] >= B[1]): A, B = B, A
-        k = (B[0] - A[0]) / ((B[1] - A[1]) if (B[1] - A[1]) != 0 else 1)
-        for j in range(B[1] - A[1]):
-            p1 = [int(A[0] + j * k), A[1] + j]
-            if (p1 not in contour): contour.append([int(A[0] + j * k), A[1] + j])
-    return contour
-
 def Draw_prism(arr):
     clr = arr[1:4]
     clr.reverse()
@@ -171,6 +165,31 @@ def Draw_prism(arr):
     #y=kx + l
     Draw_plane(Create_contour(points), clr, arr[-1])
 
+#endregion
+
+#region visualise functions init
+def view3d():
+    t1=t.time()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    print("point1: ok")
+    c=np.zeros((3, picX*picY), dtype=int)
+
+    for y in range(picY):
+        #print(y)
+        t1 = t.time()
+        for x in range(picX):
+            c[0][y*picX + x]=x
+            #ax.scatter3D(x,y,zpic[y][x])
+            #ax.scatter(x,y,zpic[y][x])
+        print(y, " : ",t.time()-t1)
+    print("point2: ok")
+
+    print("3d generation time: ", t.time()-t1)
+    t1=t.time()
+    #fig.show()
+    fig.savefig("fig1.png")
+    print("3d save time: ", t.time() - t1)
 #endregion
 
 #region cmd reaction
@@ -196,7 +215,7 @@ for s in f:
         Draw_sphere(arr)
 
     elif arr[0]=="pyramid":
-        print("pyramid generation")
+        continue
 
     elif arr[0] == "prism":
         Draw_prism(arr)
@@ -205,7 +224,7 @@ for s in f:
         cv2.imwrite(imgfile, pic)
 
     elif arr[0] == "3dpic":
-        print("3dpic visualise")
+        view3d()
 #endregion
 
 #region save_data
