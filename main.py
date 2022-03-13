@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 import os.path
 import math as m
-#import matplotlib.pyplot as plt
-import plotly as plt
+import matplotlib.pyplot as plt
+#import plotly as plt
 import time as t
 import threading
 
